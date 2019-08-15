@@ -1,5 +1,6 @@
 package view.panels;
 
+import javafx.beans.property.IntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Label;
@@ -11,13 +12,19 @@ import model.domain.rekeningElement.RekeningElement;
 import javafx.scene.layout.GridPane;
 import model.controller.Controller;
 
+import java.util.ArrayList;
+
 public class KlantPane extends GridPane implements Observer{
     private Subject rekeningData;
 
     private Controller controller;
 
     private TableView table;
+    private ArrayList<RekeningElement> rekeningElementArrayList = new ArrayList<RekeningElement>();
     private ObservableList<RekeningElement> rekeningElementen = FXCollections.observableArrayList();
+
+    private Label totaalPrijs = new Label(Double.toString(0));
+
 
     public KlantPane(Controller controller, Subject rekeningData) {
         this.rekeningData = rekeningData;
@@ -52,25 +59,57 @@ public class KlantPane extends GridPane implements Observer{
         this.add(table, 0, 5, 5, 6);
 
         this.add(new Label("Totaal te betalen:"), 3, 0, 1, 1);
-        //this.add(totaalPrijs, 4, 0, 1, 1);
-
+        this.add(totaalPrijs, 4, 0, 1, 1);
     }
 
 
     @Override
     public void update(ObservableList<Artikel> gescandeArtikels) {
-        rekeningElementen.removeAll();
-        for (Artikel artikel : gescandeArtikels){
-            if (rekeningElementen.contains(controller.scanRekeningElement(artikel.getCode()))){
-                for (RekeningElement rekeningElement: rekeningElementen){
-                    if (rekeningElement.getCode() == artikel.getCode()){
-                        rekeningElement.verhoogAantal();
-                    }
+
+        //System.out.println("size voor removeAll: " + rekeningElementen.size());
+        //rekeningElementen.removeAll();
+
+        while (rekeningElementen.size() != 0){
+            rekeningElementen.remove(0);
+        }
+
+        while (rekeningElementArrayList.size() != 0){
+            rekeningElementArrayList.remove(0);
+        }
+
+        for (Artikel gescandArtikel : gescandeArtikels){
+            boolean bevat = false;
+            for(int i = 0; i < rekeningElementArrayList.size(); i++){
+                if (gescandArtikel.getCode().equals(rekeningElementArrayList.get(i).getCode())){
+                    rekeningElementArrayList.get(i).verhoogAantal();
+                    bevat = true;
                 }
             }
-            else{
-                rekeningElementen.add(new RekeningElement(artikel.getCode(), artikel.getOmschrijving(), artikel.getVerkoopprijs(), 1));
+            if (bevat == false){
+                rekeningElementArrayList.add(new RekeningElement(gescandArtikel));
             }
+        }
+
+        for (RekeningElement rekeningElement : rekeningElementArrayList){
+            rekeningElementen.add(rekeningElement);
+        }
+
+        this.getChildren().remove(totaalPrijs);
+        totaalPrijs = new Label(controller.getRekening(rekeningElementen));
+        this.add(totaalPrijs, 4, 0, 1, 1);
+
+        updateList();
+    }
+
+    private void updateList() {
+        ObservableList<RekeningElement> dummy = FXCollections.observableArrayList();
+        while (rekeningElementen.size() != 0){
+            dummy.add(rekeningElementen.get(0));
+            rekeningElementen.remove(0);
+        }
+        while (dummy.size() != 0){
+            rekeningElementen.add(dummy.get(dummy.size() - 1));
+            dummy.remove(dummy.size() - 1);
         }
     }
 }

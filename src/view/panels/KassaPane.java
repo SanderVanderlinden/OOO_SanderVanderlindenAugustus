@@ -13,8 +13,6 @@ import model.controller.Controller;
 import model.domain.artikel.Artikel;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Observable;
 
 
 public class KassaPane extends GridPane implements Subject{
@@ -23,19 +21,21 @@ public class KassaPane extends GridPane implements Subject{
     private Controller controller;
     private TextField artikelCodeField;
 
-    private TableView prijs;
     private TableView table;
     private ObservableList<Artikel> gescandeArtikels = FXCollections.observableArrayList();
 
     private Label totaalPrijs = new Label(Double.toString(0));
     private Label verkeerdeCode = new Label("");
 
+    private Button buttonSetOnHold;
+    private Button buttonGetOnHold;
+
+
     public KassaPane(Controller controller) {
 
         observers = new ArrayList<Observer>();
         this.controller = controller;
         controller.setRekeningData(this);
-
 
         this.add(new Label("Artikelcode: "), 0, 0, 1, 1);
         artikelCodeField = new TextField();
@@ -44,14 +44,25 @@ public class KassaPane extends GridPane implements Subject{
 
         this.add(new Label("Gescande artikels:"), 0, 3, 1, 1);
 
-        //prijs = new TableView<>();
-        //prijs.setItems(controller.getTotaalPrijs(gescandeArtikels));
-        //table.setPrefWidth(REMAINING);
-
         table = new TableView<>();
 
         table.setItems(gescandeArtikels);
         table.setPrefWidth(REMAINING);
+
+        table.setRowFactory( tv -> {
+            TableRow<Artikel> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (! row.isEmpty()) ) {
+                    Artikel artikel = row.getItem();
+                    gescandeArtikels.remove(artikel);
+                    NotifyObservers();
+                    this.getChildren().remove(totaalPrijs);
+                    totaalPrijs = new Label(controller.getTotaalPrijs(gescandeArtikels));
+                    this.add(totaalPrijs, 4, 0, 1, 1);
+                }
+            });
+            return row ;
+        });
 
         // TABLE HEADERS
         TableColumn<Artikel, String> codeColumn = new TableColumn("Code");
@@ -70,7 +81,13 @@ public class KassaPane extends GridPane implements Subject{
         this.add(totaalPrijs, 4, 0, 1, 1);
         this.add(verkeerdeCode, 0, 1, 1, 1);
 
+        buttonSetOnHold = new Button("Set On Hold");
+        buttonSetOnHold.setOnAction(new ButtonHandler(this));
+        this.add(buttonSetOnHold, 3, 2, 1, 1);
 
+        buttonGetOnHold = new Button("Get On Hold");
+        buttonGetOnHold.setOnAction(new ButtonHandler(this));
+        this.add(buttonGetOnHold, 4, 2, 1, 1);
     }
 
     @Override
@@ -87,7 +104,7 @@ public class KassaPane extends GridPane implements Subject{
     }
 
     @Override
-    public void notifyObservers() {
+    public void NotifyObservers() {
         for (Observer observer: observers){
             observer.update(gescandeArtikels);
         }
@@ -106,15 +123,10 @@ public class KassaPane extends GridPane implements Subject{
         {
             if (ke.getCode().equals(KeyCode.ENTER))
             {
-                //System.out.println("geluktt");
                 if (controller.IsArtikelInDb(artikelCodeField.getText())){
                     gescandeArtikels.add(controller.scanArtikel(artikelCodeField.getText()));
-                    //totaalPrijs = new Label(controller.getTotaalPrijs(gescandeArtikels));
-                    kassaPane.getChildren().remove(totaalPrijs);
-                    totaalPrijs = new Label(controller.getTotaalPrijs(gescandeArtikels));
-                    //kassaPane.add(new Label(controller.getTotaalPrijs(gescandeArtikels)), 4, 0, 1, 1);
-                    kassaPane.add(totaalPrijs, 4, 0, 1, 1);
-                    notifyObservers();
+                    kassaPane.refreshPrijs();
+                    NotifyObservers();
                 }
                 else{
                     kassaPane.getChildren().remove(verkeerdeCode);
@@ -127,6 +139,41 @@ public class KassaPane extends GridPane implements Subject{
         }
     }
 
+    private void refreshPrijs() {
+        getChildren().remove(totaalPrijs);
+        totaalPrijs = new Label(controller.getTotaalPrijs(gescandeArtikels));
+        add(totaalPrijs, 4, 0, 1, 1);
+    }
+
+    private class ButtonHandler implements EventHandler<ActionEvent> {
+
+        private KassaPane kassaPane;
+
+        public ButtonHandler(KassaPane kassaPane) {
+            this.kassaPane = kassaPane;
+        }
+
+        @Override
+        public void handle(ActionEvent event) {
+            if (event.getSource().equals(buttonSetOnHold)) {
+                controller.setOnHold(gescandeArtikels);
+                while (gescandeArtikels.size() != 0){
+                    gescandeArtikels.remove(0);
+                }
+            }
+
+            if (event.getSource().equals(buttonGetOnHold)) {
+                while (gescandeArtikels.size() != 0){
+                    gescandeArtikels.remove(0);
+                }
+                for (Artikel artikel : controller.getOnHold()){
+                    gescandeArtikels.add(artikel);
+                }
+            }
+            kassaPane.refreshPrijs();
+            NotifyObservers();
+        }
+    }
 
 }
 

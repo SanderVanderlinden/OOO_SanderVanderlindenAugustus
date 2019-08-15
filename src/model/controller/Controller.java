@@ -2,6 +2,7 @@ package model.controller;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.Node;
 import model.db.DbException;
 import model.db.dataSource.DataSourceEnum;
 import model.db.txt.TxtArtikelDb;
@@ -16,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.System.getProperties;
+import static java.lang.System.out;
 import static java.lang.System.setProperty;
 
 public class Controller {
@@ -26,12 +28,14 @@ public class Controller {
     private TxtArtikelDb ArtikelDb;
 
     private KassaPane kassaPane;
+    private ObservableList<Artikel> onHold;
 
 
     public Controller(){
         this.kassaView = new KassaView();
         this.klantView  = new KlantView();
         ArtikelDb = new TxtArtikelDb();
+        this.onHold = FXCollections.observableArrayList();
     }
 
     public void start(Controller controller){
@@ -103,5 +107,31 @@ public class Controller {
 
     public void setRekeningData(KassaPane kassaPane) {
         this.kassaPane = kassaPane;
+    }
+
+    public String getRekening(ObservableList<RekeningElement> rekeningElementen) {
+        double totaalPrijs = 0;
+        for (RekeningElement rekeningElement : rekeningElementen){
+            totaalPrijs += rekeningElement.getTotaleVerkoopPrijs();
+        }
+
+        return Double.toString(totaalPrijs);
+    }
+
+    public void setOnHold(ObservableList<Artikel> gescandeArtikels) {
+        for (Artikel artikel: gescandeArtikels){
+            onHold.add(artikel);
+        }
+    }
+
+    public ObservableList<Artikel> getOnHold() {
+        ObservableList<Artikel> output = FXCollections.observableArrayList();;
+        for (Artikel artikel: onHold){
+            output.add(artikel);
+        }
+        while (onHold.size() != 0){
+            onHold.remove(0);
+        }
+        return output;
     }
 }

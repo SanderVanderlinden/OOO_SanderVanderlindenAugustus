@@ -5,4 +5,9 @@ import model.domain.artikel.Artikel;
 
 public interface Observer {
     public void update(ObservableList<Artikel> gescandeArtikels);
+
+    /*
+    public void updateAdd(Artikel gescandeArtikels);
+    public void updateRemove(Artikel artikel);
+    */
 }

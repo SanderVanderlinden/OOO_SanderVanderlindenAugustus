@@ -1,5 +1,7 @@
 package model.domain.rekeningElement;
 
+import model.domain.artikel.Artikel;
+
 public class RekeningElement {
 
     private String code, omschrijving;
@@ -11,6 +13,10 @@ public class RekeningElement {
         setOmschrijving(omschrijving);
         setVerkoopprijs(verkoopprijs);
         setAantal(aantal);
+    }
+
+    public RekeningElement(Artikel gescandArtikel) {
+        this(gescandArtikel.getCode(), gescandArtikel.getOmschrijving(), gescandArtikel.getVerkoopprijs(), 1);
     }
 
     public String getCode() {
@@ -45,6 +51,8 @@ public class RekeningElement {
     private void setAantal(int aantal) {
         this.aantal = aantal;
         setTotaleVerkoopPrijs();
+        //System.out.println(aantal);
+
     }
 
     public double getTotaleVerkoopPrijs() {
@@ -71,10 +79,19 @@ public class RekeningElement {
         return code.equals(rekeningElement.getCode());
     }
 
+    @Override
+    public String toString(){
+        return this.getOmschrijving() + " (" + this.getCode() + "): " + this.getAantal();
+    }
+
     public void verhoogAantal() {
         setAantal(aantal + 1);
         setTotaleVerkoopPrijs();
     }
 
-}
+    public void verlaagAantal() {
+        setAantal(aantal - 1);
+        setTotaleVerkoopPrijs();
+        //System.out.println(aantal);
+    }}
 
